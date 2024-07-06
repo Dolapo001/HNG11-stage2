@@ -19,9 +19,37 @@ class UserRegistrationView(APIView):
             token = RefreshToken.for_user(user)
             return Response({'status': 'success',
                              'message': 'User successfully registered',
-                             'data': {'accessToken': str(token.access_token),
+                             'data': {'accessToken': str(token.get_token_backend),
                                       'user': UserSerializer(user).data}},
                             status=status.HTTP_201_CREATED)
         return Response({
-            'status': 'Bad'
-        })
+            'status': 'Bad request',
+            'message': 'Registration Unsuccessful',
+            'statusCode': 400,
+            'errors': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserLoginView(APIView):
+
+    def post(self, request):
+        email = request.data.get('email')
+        password = request.data.get('password')
+
+        user = authenticate(email=email, password=password)
+
+        if user:
+            token = RefreshToken.for_user(user)
+            return Response({
+                'status': 'success',
+                'message': 'Login Successful',
+                'data': {
+                    'accessToken': str(token.get_token_backend),
+                    'user': UserSerializer(user).data,
+                }
+            }, status=status.HTTP_200_OK)
+        return Response({
+            'status': 'Bad request',
+            'message': 'Authentication failed',
+            'statusCode': 401
+        }, status=status.HTTP_401_UNAUTHORIZED)
