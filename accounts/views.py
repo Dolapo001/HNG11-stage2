@@ -84,3 +84,19 @@ class OrganizationListView(APIView):
             'data': self.serializer_class(organizations, many=True).data
         }, status=status.HTTP_200_OK)
 
+
+class OrganizationDetailsView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = OrganisationSerializer
+
+    def get(self, request, pk):
+        organisation = Organization.objects.filter(pk=pk, users=request.user).first()
+        if organisation and organisation.id == request.user.id:
+            serializer = self.serializer_class(organisation)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({
+                'status': 'Not found',
+                'message': 'User not found',
+                'statusCode': 404
+            }, status=status.HTTP_404_NOT_FOUND)
+
