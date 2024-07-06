@@ -121,3 +121,37 @@ class OrganizationCreateView(APIView):
                 'statusCode': 400,
                 'errors': serializer.errors
             }, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AddUserToOrganizationView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = OrganisationSerializer
+
+    def post(self, request, org_id):
+        user_id = request.data.get('userId')
+        try:
+            organisation = Organization.objects.get(org_id=org_id, users=request.user)
+            user = User.objects.get(user_id=user_id)
+            Membership.objects.create(user=user, organisation=organisation)
+            return Response({
+                'status': 'success',
+                'message': 'User added to organisation successfully'
+            }, status=status.HTTP_200_OK)
+        except Organization.DoesNotExist:
+            return Response({
+                'status': 'Not found',
+                'message': 'Organisation not found',
+                'statusCode': 404
+            }, status=status.HTTP_404_NOT_FOUND)
+        except User.DoesNotExist:
+            return Response({
+                'status': 'Not found',
+                'message': 'User not found',
+                'statusCode': 404
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({
+                'status': 'Bad request',
+                'message': str(e),
+                'statusCode': 400
+            }, status=status.HTTP_400_BAD_REQUEST)
