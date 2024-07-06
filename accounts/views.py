@@ -100,3 +100,24 @@ class OrganizationDetailsView(APIView):
                 'statusCode': 404
             }, status=status.HTTP_404_NOT_FOUND)
 
+
+class OrganizationCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = OrganisationSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            org = serializer.save()
+            Membership.objects.create(user=request.user, organization=org)
+            return Response({
+                'status': 'success',
+                'message': 'Organisation created successfully',
+                'data': self.serializer_class(org).data
+            }, status=status.HTTP_201_CREATED)
+        return Response({
+                'status': 'Bad request',
+                'message': 'Invalid data',
+                'statusCode': 400,
+                'errors': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
