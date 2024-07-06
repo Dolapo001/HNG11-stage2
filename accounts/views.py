@@ -1,3 +1,5 @@
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
 from .serializers import *
 from .models import *
 from rest_framework import status
@@ -19,7 +21,7 @@ class UserRegistrationView(APIView):
             token = RefreshToken.for_user(user)
             return Response({'status': 'success',
                              'message': 'User successfully registered',
-                             'data': {'accessToken': str(token.get_token_backend),
+                             'data': {'accessToken': str(token.access_token),
                                       'user': UserSerializer(user).data}},
                             status=status.HTTP_201_CREATED)
         return Response({
@@ -31,29 +33,49 @@ class UserRegistrationView(APIView):
 
 
 class UserLoginView(APIView):
-    serializer_class = UserSerializer
+    serializer_class = LoginSerializer
 
-    def post(self, request):
-        email = request.data.get('email')
-        password = request.data.get('password')
-
-        user = authenticate(email=email, password=password)
+    def post(self, request, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+        email = validated_data["email"]
+        password = validated_data["password"]
+        user = authenticate(request, email=email, password=password)
 
         if user:
-            token = RefreshToken.for_user(user)
-            return Response({
-                'status': 'success',
-                'message': 'Login Successful',
-                'data': {
-                    'accessToken': str(token.get_token_backend),
-                    'user': self.serializer_class(user).data,
+            refresh = RefreshToken.for_user(user)
+            tokens = {
+                'access': str(refresh.access_token),
+                'refresh': str(refresh)
+            }
+            data = {
+                "accessToken": tokens['access'],
+                "user": {
+                    "userId": str(user.user_id),
+                    "firstName": user.first_name,
+                    "lastName": user.last_name,
+                    "email": user.email,
+                    "phone": user.phone,
                 }
-            }, status=status.HTTP_200_OK)
-        return Response({
-            'status': 'Bad request',
-            'message': 'Authentication failed',
-            'statusCode': 401
-        }, status=status.HTTP_401_UNAUTHORIZED)
+            }
+            return Response(
+                data={
+                    "status": "success",
+                    "message": "Login successful",
+                    "data": data
+                },
+                status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                data={
+                    "status": "Bad request",
+                    "message": "Authentication failed",
+                    "statusCode": 401
+                },
+                status=status.HTTP_401_UNAUTHORIZED
+            )
 
 
 class UserDetailView(APIView):
@@ -61,9 +83,9 @@ class UserDetailView(APIView):
     serializer_class = UserSerializer
 
     def get(self, request, pk):
-        user = User.objects.filter(pk=pk, id=request.user.id).first()
+        user = User.objects.filter(pk=pk, user_id=request.user.user_id).first()
 
-        if user and user.id == request.user.id:
+        if user and user.user_id == request.user.user_id:
             serializer = self.serializer_class(user)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response({
@@ -78,7 +100,7 @@ class OrganizationListView(APIView):
     serializer_class = OrganisationSerializer
 
     def get(self, request):
-        organizations = request.user.organization.all()
+        organizations = Organization.objects.filter(users=request.user)
         return Response({
             'status': 'success',
             'data': self.serializer_class(organizations, many=True).data
@@ -90,20 +112,30 @@ class OrganizationDetailsView(APIView):
     serializer_class = OrganisationSerializer
 
     def get(self, request, pk):
-        organisation = Organization.objects.filter(pk=pk, users=request.user).first()
-        if organisation and organisation.id == request.user.id:
-            serializer = self.serializer_class(organisation)
+        try:
+            org_uuid = uuid.UUID(pk)
+        except ValueError:
+            return Response({
+                'status': 'Bad Request',
+                'message': 'Invalid UUID format for organization ID',
+                'statusCode': 400
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            organization = Organization.objects.get(org_id=org_uuid, users=request.user)
+            serializer = self.serializer_class(organization)
             return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response({
-                'status': 'Not found',
-                'message': 'User not found',
+        except Organization.DoesNotExist:
+            return Response({
+                'status': 'Not Found',
+                'message': 'Organization not found',
                 'statusCode': 404
             }, status=status.HTTP_404_NOT_FOUND)
 
 
 class OrganizationCreateView(APIView):
     permission_classes = [IsAuthenticated]
-    serializer_class = OrganisationSerializer
+    serializer_class = OrganisationCreateSerializer
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data)

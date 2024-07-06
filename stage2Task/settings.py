@@ -49,6 +49,17 @@ REST_FRAMEWORK = {
     ),
 }
 
+SIMPLE_JWT = {
+    'USER_ID_FIELD': 'user_id',
+}
+
+
+AUTHENTICATION_BACKENDS = (
+    'accounts.backends.EmailBackend',
+    'django.contrib.auth.backends.ModelBackend',
+)
+
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',

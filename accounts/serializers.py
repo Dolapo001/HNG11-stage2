@@ -34,8 +34,30 @@ class OrganisationSerializer(serializers.ModelSerializer):
         fields = ['org_id', 'name', 'description']
 
 
+class OrganisationCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Organization
+        fields = ['name', 'description']
+
+
 class MembershipSerializer(serializers.ModelSerializer):
     class Meta:
         model = Membership
         fields = ['user', 'organization']
+
+
+def validate_email_format(email):
+    if not email or '@' not in email:
+        raise serializers.ValidationError("Enter a valid email address.")
+    return email
+
+
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(max_length=150, min_length=6, write_only=True)
+
+    def validate(self, attrs):
+        email = attrs.get('email')
+        validate_email_format(email)
+        return attrs
 
