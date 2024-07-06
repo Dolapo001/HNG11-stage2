@@ -31,6 +31,7 @@ class UserRegistrationView(APIView):
 
 
 class UserLoginView(APIView):
+    serializer_class = UserSerializer
 
     def post(self, request):
         email = request.data.get('email')
@@ -45,7 +46,7 @@ class UserLoginView(APIView):
                 'message': 'Login Successful',
                 'data': {
                     'accessToken': str(token.get_token_backend),
-                    'user': UserSerializer(user).data,
+                    'user': self.serializer_class(user).data,
                 }
             }, status=status.HTTP_200_OK)
         return Response({
@@ -53,3 +54,21 @@ class UserLoginView(APIView):
             'message': 'Authentication failed',
             'statusCode': 401
         }, status=status.HTTP_401_UNAUTHORIZED)
+
+
+class UserDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = UserSerializer
+
+    def get(self, request, pk):
+        user = User.objects.filter(pk=pk, id=request.user.id).first()
+
+        if user and user.id == request.user.id:
+            serializer = self.serializer_class(user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({
+            'status': 'Not found',
+            'message': 'User not found',
+            'statusCode': 404
+        }, status=status.HTTP_404_NOT_FOUND)
+
