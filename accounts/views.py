@@ -1,3 +1,4 @@
+from django.shortcuts import get_object_or_404
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from .serializers import *
@@ -25,11 +26,13 @@ class UserRegistrationView(APIView):
                                       'user': UserSerializer(user).data}},
                             status=status.HTTP_201_CREATED)
         return Response({
-            'status': 'Bad request',
-            'message': 'Registration Unsuccessful',
-            'statusCode': 400,
-            'errors': serializer.errors
-        }, status=status.HTTP_400_BAD_REQUEST)
+            'errors': [
+                {
+                    'field': list(serializer.errors.keys())[0],
+                    'message': serializer.errors[list(serializer.errors.keys())[0]][0]
+                }
+            ]
+        }, status=422)
 
 
 class UserLoginView(APIView):
@@ -37,7 +40,15 @@ class UserLoginView(APIView):
 
     def post(self, request, **kwargs):
         serializer = self.serializer_class(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        if not serializer.is_valid():
+            return Response({
+                'errors': [
+                    {
+                        'field': list(serializer.errors.keys())[0],
+                        'message': serializer.errors[list(serializer.errors.keys())[0]][0]
+                    }
+                ]
+            }, status=422)
         validated_data = serializer.validated_data
         email = validated_data["email"]
         password = validated_data["password"]
@@ -59,23 +70,20 @@ class UserLoginView(APIView):
                     "phone": user.phone,
                 }
             }
-            return Response(
-                data={
-                    "status": "success",
-                    "message": "Login successful",
-                    "data": data
-                },
-                status=status.HTTP_200_OK
-            )
+            return Response({
+                "status": "success",
+                "message": "Login successful",
+                "data": data
+            }, status=status.HTTP_200_OK)
         else:
-            return Response(
-                data={
-                    "status": "Bad request",
-                    "message": "Authentication failed",
-                    "statusCode": 401
-                },
-                status=status.HTTP_401_UNAUTHORIZED
-            )
+            return Response({
+                'errors': [
+                    {
+                        'field': 'email/password',
+                        'message': 'Authentication failed'
+                    }
+                ]
+            }, status=status.HTTP_401_UNAUTHORIZED)
 
 
 class UserDetailView(APIView):
@@ -156,34 +164,15 @@ class OrganizationCreateView(APIView):
 
 
 class AddUserToOrganizationView(APIView):
-    permission_classes = [IsAuthenticated]
-    serializer_class = OrganisationSerializer
-
     def post(self, request, org_id):
         user_id = request.data.get('userId')
-        try:
-            organisation = Organization.objects.get(org_id=org_id, users=request.user)
-            user = User.objects.get(user_id=user_id)
-            Membership.objects.create(user=user, organisation=organisation)
-            return Response({
-                'status': 'success',
-                'message': 'User added to organisation successfully'
-            }, status=status.HTTP_200_OK)
-        except Organization.DoesNotExist:
-            return Response({
-                'status': 'Not found',
-                'message': 'Organisation not found',
-                'statusCode': 404
-            }, status=status.HTTP_404_NOT_FOUND)
-        except User.DoesNotExist:
-            return Response({
-                'status': 'Not found',
-                'message': 'User not found',
-                'statusCode': 404
-            }, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            return Response({
-                'status': 'Bad request',
-                'message': str(e),
-                'statusCode': 400
-            }, status=status.HTTP_400_BAD_REQUEST)
+        if not user_id:
+            return Response({"status": "error", "message": "userId is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        organization = get_object_or_404(Organization, org_id=org_id)
+        user = get_object_or_404(User, user_id=user_id)
+
+        Membership.objects.create(user=user, organization=organization)
+
+        return Response({"status": "success", "message": "User added to organisation successfully"},
+                        status=status.HTTP_200_OK)
