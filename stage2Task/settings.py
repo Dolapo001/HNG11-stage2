@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 import os
 from datetime import timedelta
 from pathlib import Path
+import dj_database_url
 from .exceptions import custom_exception_handler
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -103,16 +104,17 @@ WSGI_APPLICATION = 'stage2Task.wsgi.application'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 DATABASES = {
-  'default': {
-    'ENGINE': 'django.db.backends.postgresql',
-    'NAME': 'neondb',
-    'USER': 'adedolapovictoria927',
-    'PASSWORD': '4aYKfmhLsn8A',
-    'HOST': 'ep-morning-sun-07860737.us-east-2.aws.neon.tech',
-    'PORT': '5432',
-    'OPTIONS': {'sslmode': 'require'},
-  }
+    'default': dj_database_url.config(
+        default="postgresql://stage_2_user:XixzIv6Fdm3hNe44gxYni9rVCWTxza9r@dpg-cq6l0s4s1f4s73e5q770-a.oregon-postgres.render.com/stage_2",
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
 }
+
+
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+
 
 
 # Password validation
