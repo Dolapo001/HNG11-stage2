@@ -154,7 +154,9 @@ class OrganizationCreateView(APIView):
         if serializer.is_valid():
             org = serializer.save()
             Membership.objects.create(user=request.user, organization=org)
+
             ser = self.serializer_class(org).data
+
             return Response({
                 'status': 'success',
                 'message': 'Organisation created successfully',
@@ -165,16 +167,16 @@ class OrganizationCreateView(APIView):
                 }
             }, status=status.HTTP_201_CREATED)
         return Response({
-                'status': 'Bad request',
-                'message': 'Invalid data',
-                'statusCode': 400,
-                'errors': [
+            'status': 'Bad request',
+            'message': 'Client error',
+            'statusCode': 400,
+            'errors': [
                 {
                     'field': list(serializer.errors.keys())[0],
                     'message': serializer.errors[list(serializer.errors.keys())[0]][0]
                 }
             ]
-        }, status=422)
+        }, status=status.HTTP_400_BAD_REQUEST)
 
 
 class AddUserToOrganizationView(APIView):
