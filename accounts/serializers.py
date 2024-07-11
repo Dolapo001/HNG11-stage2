@@ -22,9 +22,9 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = User.objects.create_user(
             email=validated_data['email'],
-            first_name=validated_data['firstName'],
-            last_name=validated_data['lastName'],
-            phone = validated_data['phone'],
+            firstName=validated_data['firstName'],
+            lastName=validated_data['lastName'],
+            phone=validated_data['phone'],
             password=validated_data['password']
         )
         org_name = f"{validated_data['firstName']}'s Organization"

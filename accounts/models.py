@@ -4,19 +4,19 @@ import uuid
 
 
 class UserManager(BaseUserManager):
-    def create_user(self, email, first_name, last_name, password=None, phone=None, **extra_fields):
+    def create_user(self, email, firstName, lastName, password=None, phone=None, **extra_fields):
         """
         Creates and saves a User with the given email, first name, last name, password, and phone.
         """
         if not email:
             raise ValueError('The Email field must be set')
         email = self.normalize_email(email)
-        user = self.model(email=email, first_name=first_name, last_name=last_name, phone=phone, **extra_fields)
+        user = self.model(email=email, firstName=firstName, lastName=lastName, phone=phone, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, email, first_name, last_name, password=None, phone=None, **extra_fields):
+    def create_superuser(self, email, firstName, lastName, password=None, phone=None, **extra_fields):
         """
         Creates and saves a superuser with the given email, first name, last name, password, and phone.
         """
@@ -28,7 +28,7 @@ class UserManager(BaseUserManager):
         if extra_fields.get('is_superuser') is not True:
             raise ValueError('Superuser must have is_superuser=True.')
 
-        return self.create_user(email, first_name, last_name, password, phone, **extra_fields)
+        return self.create_user(email, firstName, lastName, password, phone, **extra_fields)
 
 
 class User(AbstractBaseUser):
@@ -42,7 +42,7 @@ class User(AbstractBaseUser):
     objects = UserManager()
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['firstName', 'lastName', 'phone_number']
+    REQUIRED_FIELDS = ['firstName', 'lastName', 'phone']
 
     def __str__(self):
         return self.firstName+" "+ self.lastName

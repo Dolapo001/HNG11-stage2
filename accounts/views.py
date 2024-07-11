@@ -95,16 +95,32 @@ class UserDetailView(APIView):
     serializer_class = UserSerializer
 
     def get(self, request, pk):
-        user = User.objects.filter(pk=pk, user_id=request.user.user_id).first()
+        try:
+            user = User.objects.get(userId=pk)
+        except User.DoesNotExist:
+            return Response({
+                'status': 'Not found',
+                'message': 'User not found',
+                'statusCode': 404
+            }, status=status.HTTP_404_NOT_FOUND)
 
-        if user and user.user_id == request.user.user_id:
+        # Check if the authenticated user is the same as the requested user
+        if user == request.user:
             serializer = self.serializer_class(user)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response({
-            'status': 'Not found',
-            'message': 'User not found',
-            'statusCode': 404
-        }, status=status.HTTP_404_NOT_FOUND)
+
+            response = {
+                "status": "success",
+                "message": "Getting user by id",
+                "data": serializer.data
+            }
+
+            return Response(data=response, status=status.HTTP_200_OK)
+        else:
+            return Response({
+                'status': 'Forbidden',
+                'message': 'You do not have permission to access this user record',
+                'statusCode': 403
+            }, status=status.HTTP_403_FORBIDDEN)
 
 
 class OrganizationListView(APIView):
@@ -160,10 +176,10 @@ class OrganizationCreateView(APIView):
                 'data': self.serializer_class(org).data
             }, status=status.HTTP_201_CREATED)
         return Response({
-                'status': 'Bad request',
-                'message': 'Invalid data',
-                'statusCode': 400,
-                'errors': [
+            'status': 'Bad request',
+            'message': 'Invalid data',
+            'statusCode': 400,
+            'errors': [
                 {
                     'field': list(serializer.errors.keys())[0],
                     'message': serializer.errors[list(serializer.errors.keys())[0]][0]
@@ -174,15 +190,15 @@ class OrganizationCreateView(APIView):
 
 class AddUserToOrganizationView(APIView):
     def post(self, request, orgId):
-        user_id = request.data.get('userId')
-        if not user_id:
+        userId = request.data.get('userId')
+        if not userId:
             return Response({
                 'status': 'Bad Request',
                 'message': 'userId is required',
                 'statusCode': 400
             }, status=status.HTTP_400_BAD_REQUEST)
         organization = get_object_or_404(Organization, org_id=orgId)
-        user = get_object_or_404(User, user_id=user_id)
+        user = get_object_or_404(User, userId=userId)
 
         Membership.objects.create(user=user, organization=organization)
 
