@@ -67,9 +67,9 @@ class UserLoginView(APIView):
             data = {
                 "accessToken": tokens['access'],
                 "user": {
-                    "userId": str(user.user_id),
-                    "firstName": user.first_name,
-                    "lastName": user.last_name,
+                    "userId": str(user.userId),
+                    "firstName": user.firstName,
+                    "lastName": user.lastName,
                     "email": user.email,
                     "phone": user.phone,
                 }
@@ -134,7 +134,7 @@ class OrganizationDetailsView(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            organization = Organization.objects.filter(org_id=org_uuid, users=request.user)
+            organization = Organization.objects.filter(orgId=org_uuid, users=request.user)
             serializer = self.serializer_class(organization, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Organization.DoesNotExist:
@@ -173,7 +173,7 @@ class OrganizationCreateView(APIView):
 
 
 class AddUserToOrganizationView(APIView):
-    def post(self, request, org_id):
+    def post(self, request, orgId):
         user_id = request.data.get('userId')
         if not user_id:
             return Response({
@@ -181,7 +181,7 @@ class AddUserToOrganizationView(APIView):
                 'message': 'userId is required',
                 'statusCode': 400
             }, status=status.HTTP_400_BAD_REQUEST)
-        organization = get_object_or_404(Organization, org_id=org_id)
+        organization = get_object_or_404(Organization, org_id=orgId)
         user = get_object_or_404(User, user_id=user_id)
 
         Membership.objects.create(user=user, organization=organization)

@@ -32,9 +32,9 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser):
-    user_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
-    first_name = models.CharField(max_length=40, null=False)
-    last_name = models.CharField(max_length=40, null=False)
+    userId = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
+    firstName = models.CharField(max_length=40, null=False)
+    lastName = models.CharField(max_length=40, null=False)
     email = models.EmailField(unique=True, null=False)
     password = models.CharField(max_length=100, null=False)
     phone = models.CharField(max_length=15, null=True)
@@ -42,14 +42,14 @@ class User(AbstractBaseUser):
     objects = UserManager()
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['first_name', 'last_name', 'phone_number']
+    REQUIRED_FIELDS = ['firstName', 'lastName', 'phone_number']
 
     def __str__(self):
-        return self.first_name+" "+ self.last_name
+        return self.firstName+" "+ self.lastName
 
 
 class Organization(models.Model):
-    org_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
+    orgId = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     name = models.CharField(max_length=100, null=False)
     description = models.TextField(null=True)
     users = models.ManyToManyField(User, through='Membership')

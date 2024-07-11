@@ -7,5 +7,5 @@ urlpatterns = [
     path('api/organisations', OrganizationListView.as_view(), name='organisation-list'),
     path('api/organisations/<str:pk>', OrganizationDetailsView.as_view(), name='organisation-detail'),
     path('api/organisations/', OrganizationCreateView.as_view(), name='organization-create'),
-    path('api/organisations/<uuid:org_id>/users', AddUserToOrganizationView.as_view(), name='add-user-to-organization'),
+    path('api/organisations/<uuid:orgId>/users', AddUserToOrganizationView.as_view(), name='add-user-to-organization'),
 ]
